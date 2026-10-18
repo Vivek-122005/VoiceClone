@@ -21,6 +21,7 @@ import re
 import statistics
 from pathlib import Path
 
+import numpy as np
 import tinker
 from tinker import types
 
@@ -44,8 +45,18 @@ def make_datum(tok, prompt: str, completion: str) -> types.Datum:
     cut = len(p) - 1
     return types.Datum(
         model_input=types.ModelInput.from_ints(tokens=ids[:-1]),
-        loss_fn_inputs=dict(weights=[0.0] * cut + [1.0] * len(c), target_tokens=ids[1:]),
+        loss_fn_inputs=dict(
+            weights=types.TensorData.from_numpy(np.array([0.0] * cut + [1.0] * len(c), dtype=np.float32)),
+            target_tokens=types.TensorData.from_numpy(np.array(ids[1:], dtype=np.int64)),
+        ),
     )
+
+
+def mean_nll(res, batch) -> float:
+    """Per-token cross-entropy over the completion tokens of a batch."""
+    lp = np.concatenate([o["logprobs"].to_numpy() for o in res.loss_fn_outputs])
+    w = np.concatenate([d.loss_fn_inputs["weights"].to_numpy() for d in batch])
+    return float(-(lp * w).sum() / w.sum())
 
 
 async def sample_all(sampler, tok, topics: list[str]) -> list[str]:
@@ -75,10 +86,10 @@ async def main(args):
     held_topics = [topic_of(p) for p in held]
 
     service = tinker.ServiceClient()
-    trainer = service.create_lora_training_client(base_model=args.model, rank=args.rank)
+    trainer = await service.create_lora_training_client_async(base_model=args.model, rank=args.rank)
     tok = trainer.get_tokenizer()
 
-    base_sampler = trainer.save_weights_and_get_sampling_client(name="voice-base")
+    base_sampler = await trainer.save_weights_and_get_sampling_client_async()
     base_texts = await sample_all(base_sampler, tok, held_topics)
 
     data = [make_datum(tok, PROMPT.format(topic=topic_of(p)), p) for p in train_posts]
@@ -87,13 +98,13 @@ async def main(args):
         losses = []
         for i in range(0, len(data), args.batch):
             fwd = await trainer.forward_backward_async(data=data[i : i + args.batch], loss_fn="cross_entropy")
-            opt = await trainer.optim_step_async(types.AdamParams(learning_rate=args.lr))
+            opt = await trainer.optim_step_async(adam_params=types.AdamParams(learning_rate=args.lr))
             res = await fwd.result_async()
             await opt.result_async()
-            losses.append(res.loss)
+            losses.append(mean_nll(res, data[i : i + args.batch]))
         print(f"epoch {epoch + 1}: loss {statistics.mean(losses):.4f}")
 
-    tuned_sampler = trainer.save_weights_and_get_sampling_client(name="voice-tuned")
+    tuned_sampler = await trainer.save_weights_and_get_sampling_client_async()
     tuned_texts = await sample_all(tuned_sampler, tok, held_topics)
 
     result = {
