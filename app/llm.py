@@ -57,23 +57,40 @@ async def complete_many(prompt: str, temperatures: list[float], max_tokens: int 
     return texts
 
 
+THINKING_HEADROOM = 2048
+
+
 async def _gemini(prompt: str, temperature: float, max_tokens: int) -> str:
     key = os.environ["GEMINI_API_KEY"]
     body = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": temperature, "maxOutputTokens": max_tokens, "topP": 0.95},
+        # Gemma 4 thinks before answering (~500 tokens) and that can't be switched off
+        # on this API, so leave headroom on top of the answer budget.
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_tokens + THINKING_HEADROOM,
+            "topP": 0.95,
+        },
     }
+    # The hosted Gemma endpoint intermittently returns 500/503; retry with backoff.
     async with httpx.AsyncClient(timeout=90) as client:
-        r = await client.post(
-            GEMINI_URL.format(model=model_name()), params={"key": key}, json=body
-        )
+        for attempt in range(4):
+            r = await client.post(
+                GEMINI_URL.format(model=model_name()), params={"key": key}, json=body
+            )
+            if r.status_code not in (429, 500, 502, 503, 504):
+                break
+            await asyncio.sleep(1.5 * 2**attempt + random.random())
     if r.status_code != 200:
         raise LLMError(f"Gemini API {r.status_code}: {r.text[:300]}")
     data = r.json()
     try:
-        parts = data["candidates"][0]["content"]["parts"]
+        cand = data["candidates"][0]
+        parts = cand["content"]["parts"]
     except (KeyError, IndexError) as e:
         raise LLMError(f"Unexpected Gemini response: {str(data)[:300]}") from e
+    if cand.get("finishReason") == "MAX_TOKENS":
+        raise LLMError("Gemini response was cut off (MAX_TOKENS)")
     # Gemma 4 may return a thinking part first; keep only the answer text.
     return "".join(p.get("text", "") for p in parts if not p.get("thought")).strip()
 
