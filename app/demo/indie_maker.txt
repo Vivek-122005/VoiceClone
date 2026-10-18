@@ -1,0 +1,133 @@
+shipped the new onboarding today. took 3 days. was supposed to take 1.
+
+nobody tells you that the boring parts are the product.
+
+---
+signups doubled this week and i did nothing different.
+
+turns out one person with a big newsletter linked us. that's it. that's the growth strategy.
+
+i'll take it.
+
+---
+hot take: your landing page doesn't need a hero video.
+
+it needs one sentence that tells me what you do. most don't have it.
+
+---
+spent all morning on a bug that was a typo in an env var.
+
+six years of coding. still happens. probably always will.
+
+---
+first paying customer from germany today. $9.
+
+i know it's small. i don't care. someone on the other side of the world decided my thing was worth money.
+
+---
+i used to think pricing was a math problem.
+
+it's not. it's a confidence problem. i charged $5 because i was scared. raised it to $15 and churn went down.
+
+---
+people ask how i stay productive.
+
+honestly i don't. i have two good hours a day. i protect them like crazy and the rest is email.
+
+---
+rewrote the whole backend over the weekend.
+
+was it necessary? no.
+did it feel amazing? yes.
+will i regret it? probably.
+
+---
+the hardest part of building in public is posting the bad weeks.
+
+this was one. revenue flat, two cancellations, one angry email. still here though.
+
+---
+small thing i learned: reply to every support email within an hour.
+
+people forgive bugs. they don't forgive silence.
+
+---
+if you're waiting for the idea to be perfect before you ship, it won't be.
+
+mine wasn't. still isn't. people pay for it anyway.
+
+---
+crossed $1k MRR today.
+
+took 14 months. most of it felt like nothing was happening. then it all happened in like 6 weeks.
+
+keep going.
+
+---
+my rule for features: if three different customers ask for it, i build it. if one asks loudly, i wait.
+
+saved me from building so much junk.
+
+---
+cold emailed 40 people last week. 6 replied. 2 became customers.
+
+not glamorous. works though.
+
+---
+someone asked if i'd quit my job for this.
+
+not yet. the job pays rent. the side project pays for my coffee and my sanity. both matter.
+
+---
+tried to automate my whole marketing with a tool this month.
+
+engagement dropped by half. people can tell. went back to writing my own posts and it came back.
+
+---
+note to self: talk to users before writing code. not after.
+
+i keep relearning this one.
+
+---
+the dashboard is ugly. the numbers are good.
+
+i'm keeping the ugly dashboard.
+
+---
+launched on product hunt. got #7.
+
+traffic spike for two days, then back to normal. the real users came from one reddit comment i wrote a month ago.
+
+---
+burnout check: took friday off. didn't open the laptop. nothing broke.
+
+turns out the business doesn't need me every hour. good to know.
+
+---
+the best marketing i've done costs zero dollars. answering questions in forums where my users already hang out.
+
+slow. boring. compounding.
+
+---
+three things that actually moved revenue this year:
+
+annual plans
+a better pricing page
+emailing people who churned and asking why
+
+none of them were features.
+
+---
+got my first refund request today. gave it instantly, no questions.
+
+two weeks later they came back and bought the yearly plan. be nice. it pays.
+
+---
+writing this from a train with bad wifi. deploying anyway.
+
+what could go wrong.
+
+---
+reminder that most overnight successes took like four years.
+
+i'm on year two. still waiting for the overnight part.

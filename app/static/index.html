@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VoiceClone Writer</title>
+  <meta name="description" content="Posts that sound like you, not like ChatGPT. Open-source AI (Gemma) that learns your writing voice and proves it with a score.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="logo">◐</span> VoiceClone <span class="muted">Writer</span></div>
+    <div id="voice-pill" class="pill hidden"></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Posts that sound like <em>you</em>.<br>Not like ChatGPT.</h1>
+      <p class="lede">Paste your old posts. VoiceClone learns your rhythm, phrases and habits, writes new drafts with open-source Gemma, and scores every draft on how much it sounds like you.</p>
+    </section>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="teach">1. Teach your voice</button>
+      <button class="tab" data-tab="write">2. Write</button>
+      <button class="tab" data-tab="check">3. Check any text</button>
+    </nav>
+
+    <!-- TEACH -->
+    <section id="teach" class="panel active">
+      <div class="grid2">
+        <div class="card">
+          <label for="posts">Your posts <span class="muted">(separate with a line containing ---, or 2 blank lines; CSV with a "text" column works too)</span></label>
+          <textarea id="posts" rows="14" placeholder="paste 10-50 of your real posts here..."></textarea>
+          <div class="row">
+            <input id="voice-name" placeholder="Name this voice (e.g. My LinkedIn)" value="My voice">
+            <label class="file-btn">Upload .txt/.csv<input id="file" type="file" accept=".txt,.csv" hidden></label>
+          </div>
+          <div class="row">
+            <button id="learn" class="primary">Learn my voice</button>
+            <button id="demo" class="ghost">Try the demo voice</button>
+          </div>
+          <p class="hint">Your posts stay in your browser. The server computes the fingerprint and keeps nothing.</p>
+        </div>
+        <div class="card" id="profile-card">
+          <h3>Voice fingerprint</h3>
+          <p class="muted" id="profile-empty">Teach a voice to see what makes your writing yours.</p>
+          <div id="profile-body" class="hidden">
+            <p class="big" id="profile-name"></p>
+            <ul id="traits" class="traits"></ul>
+            <h4>Phrases you repeat</h4>
+            <div id="phrases" class="chips"></div>
+            <div class="row"><button id="export" class="ghost small">Export voice</button><label class="ghost small file-btn">Import voice<input id="import" type="file" accept=".json" hidden></label></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WRITE -->
+    <section id="write" class="panel">
+      <div class="card">
+        <div class="row wrap">
+          <select id="format">
+            <option value="x_post">X post</option>
+            <option value="thread">X thread</option>
+            <option value="linkedin">LinkedIn post</option>
+            <option value="caption">Instagram caption</option>
+            <option value="newsletter">Newsletter intro</option>
+          </select>
+          <input id="topic" class="grow" placeholder="What's the post about? e.g. why I raised my prices">
+        </div>
+        <textarea id="notes" rows="3" placeholder="Optional rough notes, facts or numbers to include"></textarea>
+        <button id="generate" class="primary">Write drafts in my voice</button>
+      </div>
+      <div id="drafts"></div>
+    </section>
+
+    <!-- CHECK -->
+    <section id="check" class="panel">
+      <div class="card">
+        <label for="check-text">Paste any text, like a ChatGPT draft, to see how much it sounds like you</label>
+        <textarea id="check-text" rows="8"></textarea>
+        <div class="row">
+          <button id="score-btn" class="primary">Score it</button>
+          <button id="humanize-btn" class="ghost">Rewrite it in my voice</button>
+          <button id="sample-btn" class="ghost small">Use a ChatGPT sample</button>
+        </div>
+      </div>
+      <div id="check-out"></div>
+    </section>
+  </main>
+
+  <footer>
+    Built with open-source <b>Gemma</b> · stylometry, not vibes · <span id="model-info"></span>
+  </footer>
+  <div id="toast" class="toast hidden"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

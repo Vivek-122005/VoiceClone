@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: voiceclone-writer
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMMA_MODEL
+        value: gemma-4-31b-it
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RATE_LIMIT_PER_HOUR
+        value: "40"
