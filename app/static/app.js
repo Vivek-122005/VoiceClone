@@ -57,13 +57,21 @@ function color(v, goodHigh) {
   return good ? "var(--good)" : ok ? "var(--warn)" : "var(--bad)";
 }
 
-function meters(d) {
-  return `<div class="scores">
-    <div class="meter"><div class="label">Sounds like you</div><div class="val" style="color:${color(d.voice_match, true)}">${d.voice_match}<span class="muted">/100</span></div>
-      <div class="bar"><i style="width:${d.voice_match}%;background:${color(d.voice_match, true)}"></i></div></div>
-    <div class="meter"><div class="label">AI slop</div><div class="val" style="color:${color(d.slop, false)}">${d.slop}<span class="muted">/100</span></div>
-      <div class="bar"><i style="width:${d.slop}%;background:${color(d.slop, false)}"></i></div></div>
+function gauge(label, v, goodHigh) {
+  const c = color(v, goodHigh);
+  return `<div class="gauge">
+    <svg viewBox="0 0 52 52" aria-hidden="true"><circle class="track" cx="26" cy="26" r="21"/>
+      <circle class="arc" cx="26" cy="26" r="21" pathLength="100" style="stroke:${c};--v:${Math.max(v, 1)}"/></svg>
+    <div><div class="g-val" style="color:${c}">${v}<span>/100</span></div><div class="g-label">${label}</div></div>
   </div>`;
+}
+
+function meters(d) {
+  return `<div class="scores">${gauge("Sounds like you", d.voice_match, true)}${gauge("AI slop", d.slop, false)}</div>`;
+}
+
+function skeleton(n) {
+  return Array.from({ length: n }, () => '<div class="card"><div class="skeleton"><i></i><i></i><i></i></div></div>').join("");
 }
 
 function flagList(flags) {
@@ -90,10 +98,31 @@ function needVoice() {
   return false;
 }
 
+const TABS = ["teach", "write", "check"];
 function switchTab(name) {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === name));
+  $(".seg-thumb").style.transform = `translateX(${TABS.indexOf(name) * 100}%)`;
 }
+
+// Appearance: light (default), dark, or follow the system.
+const THEME_KEY = "voiceclone.theme";
+const darkQuery = matchMedia("(prefers-color-scheme: dark)");
+function applyTheme(pref) {
+  const dark = pref === "dark" || (pref === "system" && darkQuery.matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  document.documentElement.dataset.themePref = pref;
+  document.querySelector('meta[name="theme-color"]').content = dark ? "#000000" : "#f5f5f7";
+  document.querySelectorAll("[data-theme-set]").forEach((b) => b.setAttribute("aria-checked", b.dataset.themeSet === pref));
+}
+document.querySelectorAll("[data-theme-set]").forEach((b) => b.addEventListener("click", () => {
+  try { localStorage.setItem(THEME_KEY, b.dataset.themeSet); } catch (_) {}
+  applyTheme(b.dataset.themeSet);
+}));
+darkQuery.addEventListener("change", () => {
+  if (document.documentElement.dataset.themePref === "system") applyTheme("system");
+});
+applyTheme(document.documentElement.dataset.themePref || "light");
 document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
 
 $("#learn").addEventListener("click", (e) => busy(e.currentTarget, "Learning…", async () => {
@@ -102,14 +131,20 @@ $("#learn").addEventListener("click", (e) => busy(e.currentTarget, "Learning…"
   toast("Voice learned. Head to Write.");
 }));
 
-$("#demo").addEventListener("click", (e) => busy(e.currentTarget, "Loading…", async () => {
+async function loadDemo(e) { return busy(e.currentTarget, "Loading…", async () => {
   const d = await api("/api/demo");
   sampleAI = d.sample_ai_text;
   $("#posts").value = d.profile.posts.join("\n---\n");
   $("#voice-name").value = d.profile.name;
   setVoice(d);
   toast("Demo voice loaded: a lowercase, short-sentence indie maker.");
-}));
+}); }
+$("#demo").addEventListener("click", loadDemo);
+$("#hero-demo").addEventListener("click", async (e) => {
+  await loadDemo(e);
+  switchTab("teach");
+  $("#app").scrollIntoView({ behavior: "smooth" });
+});
 
 $("#file").addEventListener("change", async (e) => {
   const f = e.target.files[0];
@@ -129,8 +164,8 @@ $("#import").addEventListener("change", async (e) => {
 });
 
 function draftCard(d, i) {
-  return `<div class="card draft">
-    ${i === 0 ? '<span class="badge">Best match</span>' : ""}
+  return `<div class="card draft${i === 0 ? " best" : ""}">
+    ${i === 0 ? '<span class="badge">★ Best match</span>' : ""}
     <p class="text">${highlight(d.text, d.flags)}</p>
     ${meters(d)}
     ${flagList(d.flags)}
@@ -151,10 +186,14 @@ function renderDrafts(res) {
 $("#generate").addEventListener("click", (e) => {
   if (needVoice()) return;
   if (!$("#topic").value.trim()) { toast("Add a topic first."); return; }
-  busy(e.currentTarget, "Writing 4 drafts and scoring them…", async () => {
-    renderDrafts(await api("/api/generate", {
-      profile: voice.profile, topic: $("#topic").value, format: $("#format").value, notes: $("#notes").value,
-    }));
+  const prev = $("#drafts").innerHTML;
+  $("#drafts").innerHTML = skeleton(2);
+  busy(e.currentTarget, "Writing and scoring drafts…", async () => {
+    try {
+      renderDrafts(await api("/api/generate", {
+        profile: voice.profile, topic: $("#topic").value, format: $("#format").value, notes: $("#notes").value,
+      }));
+    } catch (err) { $("#drafts").innerHTML = prev; throw err; }
   });
 });
 
