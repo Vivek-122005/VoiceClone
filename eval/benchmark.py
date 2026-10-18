@@ -38,17 +38,31 @@ async def main(n_held_out: int = 5):
     posts = split_posts(DEMO.read_text())
     profile = build_profile(posts[:-n_held_out], "benchmark")
     rows = []
+    skipped = []
     for topic in TOPICS:
-        base = (await llm.complete(f"Write an X (Twitter) post about: {topic}\nOutput only the post.", 0.9)).strip()
-        vc = (await generate(profile, topic, "x_post"))["drafts"][0]["text"]
+        # One flaky API call shouldn't sink the whole run: retry the topic, then skip it.
+        for attempt in range(3):
+            try:
+                base = (await llm.complete(f"Write an X (Twitter) post about: {topic}\nOutput only the post.", 0.9)).strip()
+                vc = (await generate(profile, topic, "x_post"))["drafts"][0]["text"]
+                break
+            except llm.LLMError as e:
+                print(f"[{topic}] attempt {attempt + 1} failed: {str(e)[:80]}", file=sys.stderr, flush=True)
+        else:
+            skipped.append(topic)
+            continue
+        print(f"[{topic}] done", file=sys.stderr, flush=True)
         rows.append({
             "topic": topic,
             "baseline": {"text": base, "voice": voice_match(base, profile), "slop": slop.slop_score(base)},
             "voiceclone": {"text": vc, "voice": voice_match(vc, profile), "slop": slop.slop_score(vc)},
         })
+    if not rows:
+        sys.exit("Every topic failed; no results.")
     held = [voice_match(p, profile) for p in posts[-n_held_out:]]
     summary = {
         "model": llm.model_name(),
+        "topics_scored": len(rows),
         "real_posts_voice": round(statistics.mean(held), 1),
         "baseline_voice": round(statistics.mean(r["baseline"]["voice"] for r in rows), 1),
         "voiceclone_voice": round(statistics.mean(r["voiceclone"]["voice"] for r in rows), 1),
@@ -62,6 +76,8 @@ async def main(n_held_out: int = 5):
     print(f"| Creator's real held-out posts | {summary['real_posts_voice']} | - |")
     print(f"| Plain prompt ({summary['model']}) | {summary['baseline_voice']} | {summary['baseline_slop']} |")
     print(f"| VoiceClone ({summary['model']}) | {summary['voiceclone_voice']} | {summary['voiceclone_slop']} |")
+    if skipped:
+        print(f"\nSkipped {len(skipped)} topic(s) after repeated API errors: {', '.join(skipped)}")
     print(f"\nFull results: {out}", file=sys.stderr)
 
 
